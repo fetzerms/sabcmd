@@ -340,9 +340,9 @@ printHelp(){
         echo
         echo "   Examples:"
         echo "     - $(basename $0) status"
-        echo "     - $(basename $0) add http://here.is.my.nzb/ubuntu14_04.nzb"
-        echo "     - $(basename $0) add /tmp/here.is.my.nzb/ubuntu14_04.nzb"
-        echo "     - $(basename $0) delete ubuntu14_04"
+        echo "     - $(basename $0) add --nzb http://here.is.my.nzb/ubuntu14_04.nzb"
+        echo "     - $(basename $0) add --nzb /tmp/here.is.my.nzb/ubuntu14_04.nzb"
+        echo "     - $(basename $0) delete --target ubuntu14_04"
         echo 
         exit 1
 }
