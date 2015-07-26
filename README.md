@@ -39,9 +39,9 @@ SABcmd can be invoked on the command line, passing commands and parameters.
          
        Examples:
          - sabcmd status
-         - sabcmd add http://here.is.my.nzb/ubuntu14_04.nzb
-         - sabcmd add /tmp/here.is.my.nzb/ubuntu14_04.nzb
-         - sabcmd delete ubuntu14_04
+         - sabcmd add --nzb http://here.is.my.nzb/ubuntu14_04.nzb
+         - sabcmd add --nzb /tmp/here.is.my.nzb/ubuntu14_04.nzb
+         - sabcmd delete --target ubuntu14_04
 
 Contributing
 -------

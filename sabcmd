@@ -271,7 +271,6 @@ sabAddUpload(){
 #
 #===================================================================================
 sabDelete(){
-	echo "Removing"
 	nzbName=$1
 	rawData=$( getRawData queue )
 	nzbId=$( echo "$rawData" | xmlstarlet sel -t -m "//slot[filename='$nzbName']/nzo_id"  -v . )
@@ -283,11 +282,33 @@ sabDelete(){
 
 	status="$( echo "$rawData" | xmlstarlet sel -t -m "//status" -v . )"
 
+	printHeader
+	printEmptyLine
 	if [ "$status" = "True" ]; then
 		printText "SABnzbd deleted NZB $nzbName ($nzbId) successfully."
 	else
 		printText "SABnzbd failed to delete nzb $nzbName."
 	fi	
+	printEmptyLine
+	printFooter
+}
+
+#= sabCheck ========================================================================
+#
+# Function:    sabCheck
+# Description: Checks if SABnzbd is running. Prints error and exits otherwise
+#
+#===================================================================================
+sabCheck(){
+	rawData=$( getRawData queue)
+	if [ -z "$rawData" ]; then
+		printHeader
+		printEmptyLine
+		printText "SABnzbd is unreachable. Are you sure SABnzbd is running?"
+		printEmptyLine
+		printFooter
+		exit 1
+	fi
 }
 
 #= printHelp =======================================================================
@@ -398,6 +419,8 @@ while [[ $# > 1 ]]; do
 done	
 shift
 
+sabCheck
+
 # switch over the available commands
 case $command in
 	status )
@@ -421,7 +444,7 @@ case $command in
 
 	delete )
 		# delete nzb
-		if [ -z "$target"]; then
+		if [ -z "$target" ]; then
 			echo "Error: Delete command requires a second argument."
 		else
 			sabDelete $target
