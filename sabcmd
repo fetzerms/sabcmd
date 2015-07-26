@@ -16,7 +16,7 @@
 #
 #===================================================================================
 
-# set -x # uncomment for debugging.
+#set -x # uncomment for debugging.
 
 
 type xmlstarlet >/dev/null 2>&1 || { echo >&2 "SABcmd requires xmlstarlet but it's not installed.  Aborting."; exit 1 ; }
@@ -114,11 +114,13 @@ sabPause(){
 	status="$( echo "$rawData" | xmlstarlet sel -t -m "//status" -v . )"
 	
         printHeader
+	printEmptyLine
 	if [ "$status" = "True" ]; then
 		printText "SABnzbd paused successfully."
 	else
 		printText "SABnzbd pausing failed."
 	fi
+	printEmptyLine
         printFooter
 }
 
@@ -135,11 +137,13 @@ sabResume(){
         status="$( echo "$rawData" | xmlstarlet sel -t -m "//status" -v . )"
 
         printHeader
+	printEmptyLine
 	if [ "$status" = "True" ]; then
 		printText "SABnzbd resumed successfully."
 	else
 		printText "SABnzbd resuming failed."
 	fi
+	printEmptyLine
         printFooter
 }
 
@@ -156,11 +160,13 @@ sabRestart(){
         status="$( echo "$rawData" | xmlstarlet sel -t -m "//status" -v . )"
 
         printHeader
+	printEmptyLine
 	if [ "$status" = "True" ]; then
 		printText "SABnzbd restart command issued successfully."
 	else
 		printText "SABnzbd issuing restart command failed."
 	fi
+	printEmptyLine
         printFooter
 }
 
@@ -217,11 +223,13 @@ sabAddUrl(){
         status="$( echo "$rawData" | xmlstarlet sel -t -m "//status" -v . )"
 
         printHeader
+	printEmptyLine
 	if [ "$status" = "True" ]; then
 		printText "SABnzbd added url $url successfully."
 	else
 		printText "SABnzbd failed to add url $url."
 	fi
+	printEmptyLine
         printFooter
 
 }
@@ -238,11 +246,12 @@ sabAddUrl(){
 #
 #===================================================================================
 sabAddUpload(){
-	file=$1
+	file="$1"
 	category=$2
 
         printHeader
-	if [ -e $file ]; then
+	printEmptyLine
+	if [ -e "$file" ]; then
 
 		if [ ! -z $category ]; then
 			extra="-F "cat=$category""
@@ -260,6 +269,7 @@ sabAddUpload(){
 	else
 		printText "File $file does not exist."
 	fi
+	printEmptyLine
         printFooter
 	
 }
@@ -475,6 +485,8 @@ fi
 # get the current command and shift the args.
 command=$1
 shift
+OIFS=$IFS
+IFS=$'\n'
 
 # Argument parsing
 while [[ $# > 1 ]]; do
@@ -555,4 +567,5 @@ case $command in
 		printHelp
 esac	
 
+IFS=$OIFS
 exit 0
