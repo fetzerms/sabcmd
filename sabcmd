@@ -1,0 +1,450 @@
+#!/bin/bash
+#===================================================================================
+# This script acts as an api client to SABnzbd.
+# It offers basic operations via the command line,
+# such as adding/removing nzbs.
+#
+# Run the program without arguments to get a list
+# of available commands.
+#
+# @Author:  Matthias Fetzer ( sabcmd [at] rofl.cat )
+# @Version: 1.0
+#
+# @Changelog:
+#             2015-07-26: Initial version ( fetzerms )
+#
+#
+#===================================================================================
+
+# set -x # uncomment for debugging.
+
+# these variables can be overwritten in the config file, but
+# are set to defaults here. They can be modified to change the
+# appearance.
+sabcmdHeader="+----[ SABcmd ]------------------------------------------------>"
+sabcmdFooter="+-------------------------------------------------------------->"
+sabcmdText="| "
+
+# read config file
+if [ -e /etc/sabcmd.conf ]; then
+        source /etc/sabcmd.conf
+fi
+
+if [ -e ~/.sabcmd.conf ]; then
+        source ~/.sabcmd.conf
+fi
+
+#= getRawData ======================================================================
+#
+# Function:    getRawData
+# Description: Retrieves the raw xml output of a sabnzbd api invocation.
+#
+# Parameter:   $1 - The mode (see SABnzbd api doc for available modes)
+#              $2 - (optional) Any extra information to be added to the request uri
+#
+# Examples:    getRawData addurl name=$fileUrl&cat=$category
+#
+#===================================================================================
+getRawData(){
+	mode="$1"
+	extra=""
+	if [ ! -z $2 ]; then
+		extra="$2"
+	fi
+	echo "$(curl --silent "$sabUrl/api?mode=$mode&apikey=$sabApiKey&output=xml&$extra")"
+}
+
+#= sabStatus ======================================================================
+#
+# Function:    sabStatus
+# Description: Retrieves the current queue status.
+#
+# Parameter:   $1 - Verbose output flag. Set to true to have more output
+#
+# Examples:    sabStatus false
+#
+#===================================================================================
+sabStatus(){
+
+	long=$1
+	rawData="$( getRawData "queue" )"
+	numNzb="$(echo $rawData | xmlstarlet sel -t -c "count(/queue/slots/slot)")"
+	speed=$(echo $rawData | xmlstarlet sel -t -m '//speed' -v .)
+
+        printHeader
+        printText "Currently enqueued nzbs:"
+	printEmptyLine
+
+	typeset -i i=1
+	while [ "$i" -le "$numNzb" ]; do
+        	nzbName=$(echo $rawData | xmlstarlet sel -t -m "/queue/slots/slot[$i]/filename" -v .)
+                printText "   ( $(printf "%3s" "$i") ) $nzbName"
+
+                # Print long output?
+	        if [ "$long" = true ]; then
+	                sizeLeft=$(echo $rawData | xmlstarlet sel -t -m "/queue/slots/slot[$i]/sizeleft" -v .)
+	                percentage=$(echo $rawData | xmlstarlet sel -t -m "/queue/slots/slot[$i]/percentage" -v .)
+	                timeLeft=$(echo $rawData | xmlstarlet sel -t -m "/queue/slots/slot[$i]/timeleft" -v .)
+	                printText "$( printf "%62s" "( $percentage% done. $sizeLeft left. Eta: $timeLeft )")"
+	        fi
+	        let i++
+	done
+
+	printEmptyLine
+	printText "Current transfer speed: $speed/s"
+	printFooter
+}
+
+#= sabPause ========================================================================
+#
+# Function:    sabPause
+# Description: Pauses the SABnzbd instance.
+#
+# Examples:    sabPause
+#
+#===================================================================================
+sabPause(){
+	rawData="$( getRawData "pause" )"
+	status="$( echo "$rawData" | xmlstarlet sel -t -m "//status" -v . )"
+	
+        printHeader
+	if [ "$status" = "True" ]; then
+		printText "SABnzbd paused successfully."
+	else
+		printText "SABnzbd pausing failed."
+	fi
+        printFooter
+}
+
+#= sabResume =======================================================================
+#
+# Function:    sabResume
+# Description: Resumes/Unpauses a paused SABnzbd instance.
+#
+# Examples:    sabResume
+#
+#===================================================================================
+sabResume(){
+        rawData="$( getRawData "resume" )"
+        status="$( echo "$rawData" | xmlstarlet sel -t -m "//status" -v . )"
+
+        printHeader
+	if [ "$status" = "True" ]; then
+		printText "SABnzbd resumed successfully."
+	else
+		printText "SABnzbd resuming failed."
+	fi
+        printFooter
+}
+
+#= sabRestart ======================================================================
+#
+# Function:    sabRestart
+# Description: Restarts the SABnzbd instance.
+#
+# Examples:    sabRestart
+#
+#===================================================================================
+sabRestart(){
+        rawData="$( getRawData "restart" )"
+        status="$( echo "$rawData" | xmlstarlet sel -t -m "//status" -v . )"
+
+        printHeader
+	if [ "$status" = "True" ]; then
+		printText "SABnzbd restart command issued successfully."
+	else
+		printText "SABnzbd issuing restart command failed."
+	fi
+        printFooter
+}
+
+#= sabAdd ==========================================================================
+#
+# Function:    sabAdd
+# Description: Adds a nzb file to the SABnzbd queue.
+#
+# Parameter:   $1 - The nzb file to add. Either a url or a local filename.
+#              $2 - (optional) The category to add the nzb to.
+#
+# Examples:    sabAdd /tmp/here.is.my.nzb/ubuntu14_04.nzb
+#
+#===================================================================================
+sabAdd(){
+	fileUrl=$1
+	category=$2
+
+	case "$fileUrl" in
+	
+		http* ) 
+			sabAddUrl $fileUrl $category
+			;;
+		* )	
+			sabAddUpload $fileUrl $category
+			;;
+	esac
+}
+
+#= sabAddUrl ========================================================================
+#
+# Function:    sabAddUrl
+# Description: Adds a nzb file to the SABnzbd instance via an external url.
+#
+# Parameter:   $1 - The nzb file to add. Must be a URL starting with http or https.
+#              $2 - (optional) The category to add the nzb to.
+#
+# Examples:    sabAddUrl http://here.is.my.nzb/ubuntu14_04.nzb
+#
+#===================================================================================
+sabAddUrl(){
+	url=$1
+	category=$2
+
+	mode="addurl"
+	extra="name=$1"
+
+	if [ ! -z $category ]; then
+		extra="$extra&cat=$category"
+	fi
+
+	rawData=$(getRawData $mode $extra)
+
+        status="$( echo "$rawData" | xmlstarlet sel -t -m "//status" -v . )"
+
+        printHeader
+	if [ "$status" = "True" ]; then
+		printText "SABnzbd added url $url successfully."
+	else
+		printText "SABnzbd failed to add url $url."
+	fi
+        printFooter
+
+}
+
+#= sabAddUpload =====================================================================
+#
+# Function:    sabAddUpload
+# Description: Adds a nzb file to the SABnzbd instance via file upload.
+#
+# Parameter:   $1 - The nzb file to add. Must be a local (existing) file.
+#              $2 - (optional) The category to add the nzb to.
+#
+# Examples:    sabAddUpload /tmp/here.is.my.nzb/ubuntu14_04.nzb
+#
+#===================================================================================
+sabAddUpload(){
+	echo "Test"
+	file=$1
+	category=$2
+
+        printHeader
+	if [ -e $file ]; then
+
+		if [ ! -z $category ]; then
+			extra="-F "cat=$category""
+		fi
+
+		rawData=$(curl --silent $sabUrl/api -F apikey="$sabApiKey" -F mode=addfile -F output=xml -F "name=@$file" $extra )
+		echo $rawData
+		status="$( echo "$rawData" | xmlstarlet sel -t -m "//status" -v . )"
+
+        	if [ "$status" = "True" ]; then
+        		printText "SABnzbd added file $file successfully."
+	        else
+        		printText "SABnzbd failed to add file $file."
+        	fi
+	
+	else
+		printText "File $file does not exist."
+	fi
+        printFooter
+	
+}
+
+#= sabDelete =======================================================================
+#
+# Function:    sabDelete
+# Description: Deletes a nzb file from the SABnzbd queue.
+#
+# Parameter:   $1 - The name of the nzb file to be deleted.
+#
+# Examples:    sabDelete ubuntu14_04
+#
+#===================================================================================
+sabDelete(){
+	echo "Removing"
+	nzbName=$1
+	rawData=$( getRawData queue )
+	nzbId=$( echo "$rawData" | xmlstarlet sel -t -m "//slot[filename='$nzbName']/nzo_id"  -v . )
+	
+	mode="queue"
+	extra="name=delete&value=$nzbId"
+
+	rawData=$( getRawData $mode $extra )
+
+	status="$( echo "$rawData" | xmlstarlet sel -t -m "//status" -v . )"
+
+	if [ "$status" = "True" ]; then
+		printText "SABnzbd deleted NZB $nzbName ($nzbId) successfully."
+	else
+		printText "SABnzbd failed to delete nzb $nzbName."
+	fi	
+}
+
+#= printHelp =======================================================================
+#
+# Function:    printHelp
+# Description: Prints the help
+#
+# Examples:    printHelp
+#
+#===================================================================================
+printHelp(){
+
+        echo "Usage: $(basename $0) <command> <parameters>"
+        echo 
+        echo "   Commands:"
+        echo "     - status      : Print queue status"
+        echo "     - long-status : Print queue status (verbose)"
+        echo "     - add         : Adds a nzb to the queue"
+        echo "     - delete      : Deletes a nzb from the queue"
+        echo "     - pause       : Pauses SABnzbd"
+        echo "     - resume      : Resumes a paused SABnzbd"
+        echo "     - restart     : Restarts SABnzbd"
+        echo 
+        echo "   Parameters:"
+        echo "     - --category/-c : The category to add a nzb to."
+        echo "     - --nzb/-n      : Path or url to the nzb file to add."
+        echo "     - --target/-t   : The queue target to operate on."
+        echo
+        echo
+        echo "   Examples:"
+        echo "     - $(basename $0) status"
+        echo "     - $(basename $0) add http://here.is.my.nzb/ubuntu14_04.nzb"
+        echo "     - $(basename $0) add /tmp/here.is.my.nzb/ubuntu14_04.nzb"
+        echo "     - $(basename $0) delete ubuntu14_04"
+        echo 
+        exit 1
+}
+
+
+# helper to print to stderr
+printError(){
+        echo "$@" 1>&2
+}
+
+# helper to print sabcmd header
+printHeader(){
+        echo -e "$sabcmdHeader"
+}
+
+# helper to print sabcmd footer
+printFooter(){
+	echo -e "$sabcmdFooter"
+}
+
+# helper to print text between header and footer.
+printText(){
+        while IFS= read -r line; do
+                echo "$sabcmdText$line"
+        done <<< "$@"
+}
+
+# helper to print an empty line.
+printEmptyLine(){
+        printText
+}
+
+
+if [ -z $sabUrl ] || [ -z $sabApiKey ]; then
+        printHeader
+        printEmptyLine        
+        printText "sabUrl or sabApiKey are not set. Please create or edit"
+        printText "/etc/sabcmd.conf or ~/.sabcmd.conf. Please refer to"
+        printText "sabcmd.conf.sample for more information."
+        printEmptyLine
+        printFooter
+        exit 1
+fi
+
+# get the current command and shift the args.
+command=$1
+shift
+
+# Argument parsing
+while [[ $# > 1 ]]; do
+
+	key="$1"
+
+	case $key in
+		-c|--category)
+			category="$2"
+			shift
+			;;
+
+		-n|--nzb)
+			nzb="$2"
+	 		shift
+			;;
+
+		-t|--target)
+			target="$2"
+			shift
+			;;
+
+		*)
+			shift # ignore unknown option.
+		;;
+	esac
+done	
+shift
+
+# switch over the available commands
+case $command in
+	status )
+		# print status, short
+		sabStatus false
+		;;
+
+	long-status )
+		# print status, long
+		sabStatus true
+		;;
+
+	add )
+		# add nzb. Either file or url.
+		if [ -z $nzb ]; then
+			echo "Error: Add command requires a second argument."
+		else
+			sabAdd $nzb $category
+		fi
+		;;
+
+	delete )
+		# delete nzb
+		if [ -z "$target"]; then
+			echo "Error: Delete command requires a second argument."
+		else
+			sabDelete $target
+		fi
+		;;
+
+	pause )
+		# pause sabnzbd
+		sabPause
+		;;
+
+	resume )
+		# resume sabnzbd
+		sabResume
+		;;
+
+	restart )
+		# restart sabnzbd
+		sabRestart
+		;;
+	* )
+		# print the help
+		printHelp
+esac	
+
+exit 0

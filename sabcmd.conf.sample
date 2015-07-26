@@ -1,0 +1,13 @@
+# sabcmd.conf.sample
+#
+# Edit the following lines:
+
+saburl="http://yoursabinstall:port"
+sabApiKey="placeyourapikeyhere"
+
+# You can uncomment and edit the following lines.
+# Editing/Uncommenting those lines is optional:
+
+# sabcmdHeader="Your custom header"
+# sabcmdFooter="Your custom footer"
+# sabcmdText="Your custom text before each printed line"

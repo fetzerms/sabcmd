@@ -1,6 +1,11 @@
 # SABcmd
-Bash based command line interface for SABnzbd. The features are quiet basic.
-Feel free to contribute new features or bug fixes.
+Bash based command line interface for SABnzbd. 
+
+This script acts as an api client to SABnzbd. It offers basic
+operations, such as adding/removing nzb files to/from SABnzbd.
+
+The features are quiet basic, but feel free to contribute new 
+features or bug fixes.
 
 Installation
 --------------
