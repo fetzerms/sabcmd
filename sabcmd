@@ -32,12 +32,17 @@ sabcmdFooter="+-------------------------------------------------------------->"
 sabcmdText="| "
 
 # read config file
-if [ -e /etc/sabcmd.conf ]; then
-        source /etc/sabcmd.conf
-fi
-
+# First try personal config, then system wide, then existing sabnzbd.ini
 if [ -e ~/.sabcmd.conf ]; then
         source ~/.sabcmd.conf
+elif [ -e /etc/sabcmd.conf ]; then
+        source /etc/sabcmd.conf
+elif [ -e ~/.sabnzbd/sabnzbd.ini ]; then
+	#echo "Using ~/.sabnzbd/sabnzbd.ini"
+	sabUrl="http://localhost:$(awk ' /^port/ { print $NF ; exit }' < ~/.sabnzbd/sabnzbd.ini)"
+	sabApiKey=$(awk ' /^api_key/ { print $NF  }' < ~/.sabnzbd/sabnzbd.ini)
+	#echo "Found:" $sabUrl
+	#echo "Found:" $sabApiKey      
 fi
 
 #= getRawData ======================================================================
