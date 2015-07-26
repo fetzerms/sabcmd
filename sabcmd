@@ -18,6 +18,10 @@
 
 # set -x # uncomment for debugging.
 
+
+type xmlstarlet >/dev/null 2>&1 || { echo >&2 "SABcmd requires xmlstarlet but it's not installed.  Aborting."; exit 1 ; }
+type curl >/dev/null 2>&1 || { echo >&2 "SABcmd requires curl but it's not installed.  Aborting."; exit 1 ; }
+
 # these variables can be overwritten in the config file, but
 # are set to defaults here. They can be modified to change the
 # appearance.
@@ -85,7 +89,9 @@ sabStatus(){
 	                sizeLeft=$(echo $rawData | xmlstarlet sel -t -m "/queue/slots/slot[$i]/sizeleft" -v .)
 	                percentage=$(echo $rawData | xmlstarlet sel -t -m "/queue/slots/slot[$i]/percentage" -v .)
 	                timeLeft=$(echo $rawData | xmlstarlet sel -t -m "/queue/slots/slot[$i]/timeleft" -v .)
-	                printText "$( printf "%62s" "( $percentage% done. $sizeLeft left. Eta: $timeLeft )")"
+			nzoId=$( echo $rawData | xmlstarlet sel -t -m "/queue/slots/slot[$i]/nzo_id" -v . )
+	                printText "$( printf "%62s" "( $nzoId $percentage% done. $sizeLeft left. Eta: $timeLeft )")"
+			printEmptyLine
 	        fi
 	        let i++
 	done
@@ -232,7 +238,6 @@ sabAddUrl(){
 #
 #===================================================================================
 sabAddUpload(){
-	echo "Test"
 	file=$1
 	category=$2
 
@@ -244,7 +249,6 @@ sabAddUpload(){
 		fi
 
 		rawData=$(curl --silent $sabUrl/api -F apikey="$sabApiKey" -F mode=addfile -F output=xml -F "name=@$file" $extra )
-		echo $rawData
 		status="$( echo "$rawData" | xmlstarlet sel -t -m "//status" -v . )"
 
         	if [ "$status" = "True" ]; then
@@ -265,32 +269,107 @@ sabAddUpload(){
 # Function:    sabDelete
 # Description: Deletes a nzb file from the SABnzbd queue.
 #
-# Parameter:   $1 - The name of the nzb file to be deleted.
+# Parameter:   $1 - The name/nzo_id/number of the nzb file to be deleted.
 #
 # Examples:    sabDelete ubuntu14_04
 #
 #===================================================================================
 sabDelete(){
-	nzbName=$1
-	rawData=$( getRawData queue )
-	nzbId=$( echo "$rawData" | xmlstarlet sel -t -m "//slot[filename='$nzbName']/nzo_id"  -v . )
-	
+
+        printHeader
+	printEmptyLine
+	case $1 in
+		SABnzbd_nzo_*)
+			# nzo id. Delete this one only
+			sabDeleteNzo $1
+			;;
+		''|*[!0-9]*)
+			# string, means nzb title. Delete all that match.
+			sabDeleteName $1
+			;;
+		*) 
+			# It must be a number.
+			sabDeleteNum $1
+			;;
+	esac
+	printEmptyLine
+	printFooter
+}
+
+#= sabDeleteNzo ====================================================================
+#
+# Function:    sabDeleteNzo
+# Description: Deletes a nzb file from the SABnzbd queue.
+#
+# Parameter:   $1 - nzo_id of the nzb file to be deleted.
+#
+# Examples:    sabDeleteNzo SABnzbd_nzo_wRDhlV
+#
+#===================================================================================
+sabDeleteNzo(){
+        nzbId=$1
+
 	mode="queue"
 	extra="name=delete&value=$nzbId"
 
-	rawData=$( getRawData $mode $extra )
 
-	status="$( echo "$rawData" | xmlstarlet sel -t -m "//status" -v . )"
+        if [ ! -z "$nzbId" ]; then
 
-	printHeader
-	printEmptyLine
-	if [ "$status" = "True" ]; then
-		printText "SABnzbd deleted NZB $nzbName ($nzbId) successfully."
-	else
-		printText "SABnzbd failed to delete nzb $nzbName."
-	fi	
-	printEmptyLine
-	printFooter
+                
+
+                rawStatusData=$( getRawData $mode $extra )
+		status="$( echo "$rawStatusData" | xmlstarlet sel -t -m "//status" -v . )"
+
+		if [ "$status" = "True" ]; then
+			printText "SABnzbd deleted NZB $nzbId successfully."
+		else
+			printText "SABnzbd failed to delete nzb $nzbId."
+		fi	
+        else
+                
+                printText "No nzb found."
+        fi
+}
+
+#= sabDeleteName ===================================================================
+#
+# Function:    sabDeleteName
+# Description: Deletes all nzb files matching the given name.
+#
+# Parameter:   $1 - name of the file to be deleted
+#
+# Examples:    sabDeleteName SABnzbd_nzo_wRDhlV
+#
+#===================================================================================
+sabDeleteName(){
+	nzbName=$1
+	rawQueueData=$( getRawData queue )
+
+	numNzb="$( echo "$rawData" | xmlstarlet sel -t -c "count(/queue/slots/slot[filename='$nzbName'])")"
+
+	typeset -i i=1
+	while [ "$i" -le "$numNzb" ]; do
+		nzbId="$( echo "$rawQueueData" | xmlstarlet sel -t -m "//slot[filename='$nzbName'][$i]/nzo_id"  -v . )"
+        	sabDeleteNzo $nzbId
+                let i++
+	done
+}
+
+#= sabDeleteNum ====================================================================
+#
+# Function:    sabDeleteNum
+# Description: Deletes a nzb file from the SABnzbd queue.
+#
+# Parameter:   $1 - Number of the queued item to delete
+#
+# Examples:    sabDeleteNum SABnzbd_nzo_wRDhlV
+#
+#===================================================================================
+sabDeleteNum(){
+        nzbNum=$1
+        nzbId="$( echo "$rawData" | xmlstarlet sel -t -m "//slot[$nzbNum]/nzo_id"  -v . )"
+
+        sabDeleteNzo $nzbId	
 }
 
 #= sabCheck ========================================================================
@@ -336,6 +415,10 @@ printHelp(){
         echo "     - --category/-c : The category to add a nzb to."
         echo "     - --nzb/-n      : Path or url to the nzb file to add."
         echo "     - --target/-t   : The queue target to operate on."
+        echo "                       Can be: nzo_id, nzb-name or number"
+        echo
+        echo "                       Caution: When passing a nzb-name, the operations"
+        echo "                                will affect all matching queue entries."
         echo
         echo
         echo "   Examples:"
@@ -343,6 +426,8 @@ printHelp(){
         echo "     - $(basename $0) add --nzb http://here.is.my.nzb/ubuntu14_04.nzb"
         echo "     - $(basename $0) add --nzb /tmp/here.is.my.nzb/ubuntu14_04.nzb"
         echo "     - $(basename $0) delete --target ubuntu14_04"
+        echo "     - $(basename $0) delete --target SABnzbd_nzo_wRDhlV"       
+        echo "     - $(basename $0) delete --target 2"
         echo 
         exit 1
 }
