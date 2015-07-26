@@ -2,7 +2,7 @@
 #
 # Edit the following lines:
 
-saburl="http://yoursabinstall:port"
+sabUrl="http://yoursabinstall:port"
 sabApiKey="placeyourapikeyhere"
 
 # You can uncomment and edit the following lines.
