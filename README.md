@@ -1,5 +1,10 @@
 # SABcmd
-Bash based command line interface for SABnzbd. 
+Bash based command line interface for SABnzbd. The goal of this
+project is to nearly run without dependencies. So it could be run
+on embedded devices such as routers or in restricted chrooted environments.
+
+If you have python available, https://github.com/TobiasTheViking/sabcli
+is worth a look aswell.
 
 This script acts as an api client to SABnzbd. It offers basic
 operations, such as adding/removing nzb files to/from SABnzbd.
@@ -16,6 +21,11 @@ Copy sabcmd.conf.sample to /etc/sabcmd.conf or ~/.sabcmd.conf and edit.
     sudo cp sabcmd /usr/local/bin/
     cp sabcmd ~/.sabcmd.conf
     vim ~/.sabcmd.conf
+
+To make the script work, curl and xmlstarlet need to be installed.
+
+    Ubuntu/Debian: sudo apt-get install curl xmlstarlet
+    CentOS: sudo yum install xmlstarlet curl
 
 Usage
 -------
