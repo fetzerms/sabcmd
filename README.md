@@ -46,12 +46,20 @@ SABcmd can be invoked on the command line, passing commands and parameters.
          - --category/-c : The category to add a nzb to.
          - --nzb/-n      : Path or url to the nzb file to add.
          - --target/-t   : The queue target to operate on.
+                           Can be: nzo_id, nzb-name or number
+
+                           Caution: When passing a nzb-name, the operations
+                                    will affect all matching queue entries.
+
          
        Examples:
          - sabcmd status
          - sabcmd add --nzb http://here.is.my.nzb/ubuntu14_04.nzb
          - sabcmd add --nzb /tmp/here.is.my.nzb/ubuntu14_04.nzb
          - sabcmd delete --target ubuntu14_04
+         - sabcmd delete --target SABnzbd_nzo_wRDhlV
+         - sabcmd delete --target 2
+
 
 Contributing
 -------
