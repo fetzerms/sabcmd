@@ -218,7 +218,7 @@ sabAddUrl(){
 	priority=$3
 
 	mode="addurl"
-	extra="name=$url&category=$category&priority=$priority"
+	extra="name=$url&cat=$category&priority=$priority"
 
 	rawData=$(getRawData $mode $extra)
 
