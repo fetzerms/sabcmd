@@ -423,6 +423,8 @@ printHelp(){
         echo "   Parameters:"
         echo "     - --category/-c : The category to add a nzb to."
         echo "     - --nzb/-n      : Path or url to the nzb file to add."
+	echo "     - --priority/-p : The priority for the nzb."
+        echo "                       Possible values: low, normal, high and force."
         echo "     - --target/-t   : The queue target to operate on."
         echo "                       Can be: nzo_id, nzb-name or number"
         echo
