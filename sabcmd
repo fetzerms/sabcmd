@@ -188,14 +188,15 @@ sabRestart(){
 sabAdd(){
 	fileUrl=$1
 	category=$2
+	priority=$3
 
 	case "$fileUrl" in
 	
 		http* ) 
-			sabAddUrl $fileUrl $category
+			sabAddUrl $fileUrl $category $priority
 			;;
 		* )	
-			sabAddUpload $fileUrl $category
+			sabAddUpload $fileUrl $category $priority
 			;;
 	esac
 }
@@ -214,13 +215,10 @@ sabAdd(){
 sabAddUrl(){
 	url=$1
 	category=$2
+	priority=$3
 
 	mode="addurl"
-	extra="name=$1"
-
-	if [ ! -z $category ]; then
-		extra="$extra&cat=$category"
-	fi
+	extra="name=$url&category=$category&priority=$priority"
 
 	rawData=$(getRawData $mode $extra)
 
@@ -252,16 +250,13 @@ sabAddUrl(){
 sabAddUpload(){
 	file="$1"
 	category=$2
+	priority=$3
 
         printHeader
 	printEmptyLine
 	if [ -e "$file" ]; then
 
-		if [ -z $category ]; then
-			category="Default"
-		fi
-
-		rawData=$(curl --silent $sabUrl/api -F apikey="$sabApiKey" -F mode=addfile -F output=xml -F "name=@$file" -F "cat=$category" )
+		rawData=$(curl --silent $sabUrl/api -F apikey="$sabApiKey" -F mode=addfile -F output=xml -F "name=@$file" -F "cat=$category" -F "priority=$priority" )
 		status="$( echo "$rawData" | xmlstarlet sel -t -m "//status" -v . )"
 
         	if [ "$status" = "True" ]; then
@@ -514,6 +509,24 @@ while [[ $# > 1 ]]; do
 			;;
 		-p|--priority)
 			priority="$2"
+			case $priority in
+				low)
+					priority="-1"
+					;;
+				
+				normal)
+					priority="0"
+					;;
+
+				high)
+					priority="1"
+					;;
+
+				force)
+					priority="2"
+					;;
+
+			esac
 			shift
 			;;
 		*)
@@ -524,6 +537,14 @@ done
 shift
 
 sabCheck
+
+if [ -z $category ]; then
+	category="Default"
+fi
+
+if [ -z $priority ]; then
+	priority="Default"
+fi
 
 # switch over the available commands
 case $command in
@@ -542,7 +563,7 @@ case $command in
 		if [ -z $nzb ]; then
 			echo "Error: Add command requires a second argument."
 		else
-			sabAdd $nzb $category
+			sabAdd $nzb $category $priority
 		fi
 		;;
 
