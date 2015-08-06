@@ -261,7 +261,7 @@ sabAddUpload(){
 	if [ -e "$file" ]; then
 
 		if [ ! -z $category ]; then
-			extra="-F "cat=$category""
+			extra="-F cat=$category"
 		fi
 
 		rawData=$(curl --silent $sabUrl/api -F apikey="$sabApiKey" -F mode=addfile -F output=xml -F "name=@$file" $extra )
@@ -515,7 +515,10 @@ while [[ $# > 1 ]]; do
 			target="$2"
 			shift
 			;;
-
+		-p|--priority)
+			priority="$2"
+			shift
+			;;
 		*)
 			shift # ignore unknown option.
 		;;
