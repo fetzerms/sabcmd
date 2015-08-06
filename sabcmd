@@ -260,11 +260,11 @@ sabAddUpload(){
 	printEmptyLine
 	if [ -e "$file" ]; then
 
-		if [ ! -z $category ]; then
-			extra="-F cat=$category"
+		if [ -z $category ]; then
+			category="Default"
 		fi
 
-		rawData=$(curl --silent $sabUrl/api -F apikey="$sabApiKey" -F mode=addfile -F output=xml -F "name=@$file" $extra )
+		rawData=$(curl --silent $sabUrl/api -F apikey="$sabApiKey" -F mode=addfile -F output=xml -F "name=@$file" -F "cat=$category" )
 		status="$( echo "$rawData" | xmlstarlet sel -t -m "//status" -v . )"
 
         	if [ "$status" = "True" ]; then
