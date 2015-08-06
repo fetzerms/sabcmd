@@ -38,6 +38,7 @@ SABcmd can be invoked on the command line, passing commands and parameters.
          - long-status : Print queue status (verbose)
          - add         : Adds a nzb to the queue
          - delete      : Deletes a nzb from the queue
+         - change      : Changes the priority and/or category of a nzb.
          - pause       : Pauses SABnzbd
          - resume      : Resumes a paused SABnzbd
          - restart     : Restarts SABnzbd
@@ -59,6 +60,8 @@ SABcmd can be invoked on the command line, passing commands and parameters.
          - sabcmd add --nzb http://here.is.my.nzb/ubuntu14_04.nzb --priority low
          - sabcmd add --nzb http://here.is.my.nzb/ubuntu14_04.nzb --priority low --category test
          - sabcmd add --nzb /tmp/here.is.my.nzb/ubuntu14_04.nzb
+         - sabcmd change --target ubuntu14_04 --category test
+         - sabcmd change --target ubuntu14_04 --priority high
          - sabcmd delete --target ubuntu14_04
          - sabcmd delete --target SABnzbd_nzo_wRDhlV
          - sabcmd delete --target 2

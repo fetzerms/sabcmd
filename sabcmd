@@ -373,7 +373,7 @@ sabDeleteName(){
 #
 # Parameter:   $1 - Number of the queued item to delete
 #
-# Examples:    sabDeleteNum SABnzbd_nzo_wRDhlV
+# Examples:    sabDeleteNum 1
 #
 #===================================================================================
 sabDeleteNum(){
@@ -383,52 +383,217 @@ sabDeleteNum(){
         sabDeleteNzo $nzbId	
 }
 
-sabChange(){
+#= sabChangePrio ===================================================================
+#
+# Function:    sabChangePrio
+# Description: Changes the priority of a nzb in the SABnzbd queue.
+#
+# Parameter:   $1 - The name/nzo_id/number of the nzb file to change the priority.
+#              $2 - The new priority to set (numeric)
+#
+# Examples:    sabChangePrio ubuntu14_04 -2
+#
+#===================================================================================
+sabChangePrio(){
 	target=$1
-	category=$2
-	priority=$3
+	priority=$2
 
-        printHeader
-        printEmptyLine
         case $target in
                 SABnzbd_nzo_*)
                         # nzo id. Changee this one only
-                        sabChangeNzo $target $category $priority
+                        sabChangePrioNzo $target $priority
                         ;;
                 ''|*[!0-9]*)
                         # string, means nzb title. Change all that match.
-                        sabChangeName $target $category $priority
+                        sabChangePrioName $target $priority
                         ;;
                 *)
                         # It must be a number.
-                        sabChangeNum $target $category $priority
+                        sabChangePrioNum $target $priority
                         ;;
         esac
-        printEmptyLine
-        printFooter
+}
 
+#= sabChangePrioNzo ================================================================
+#
+# Function:    sabChangePrioNzo
+# Description: Changes the priority of a nzb in the SABnzbd queue.
+#
+# Parameter:   $1 - The nzo_id of the nzb file to change the priority.
+#              $2 - The new priority to set (numeric)
+#
+# Examples:    sabChangePrioNzo SABnzbd_nzo_wRDhlV -2
+#
+#===================================================================================
+sabChangePrioNzo(){
+	target=$1
+	priority=$2
+
+        mode="queue"
+        extra="name=priority&value=$target&value2=$priority"
+
+        rawStatusData=$( getRawData $mode $extra )
+
+        position="$( echo "$rawStatusData" | xmlstarlet sel -t -m "//position" -v . )"
+
+        if [ -z $position ]; then
+                printText "Changing priority for Nzo $target failed."
+        else 
+                printText "Changed priority for Nzo $target."
+        fi
+}
+
+#= sabChangePrioName ================================================================
+# Function:    sabChangePrioName
+# Description: Changes the priority of a nzb in the SABnzbd queue.
+#
+# Parameter:   $1 - The name of the nzb file to change the priority.
+#              $2 - The new priority to set (numeric)
+#
+# Examples:    sabChangePrioName ubuntu14_04 -2
+#
+#===================================================================================
+sabChangePrioName(){
+	nzbName=$1
+	priority=$2
+
+	rawQueueData=$( getRawData queue )
+
+	numNzb="$( echo "$rawData" | xmlstarlet sel -t -c "count(/queue/slots/slot[filename='$nzbName'])")"
+
+	typeset -i i=1
+	while [ "$i" -le "$numNzb" ]; do
+		nzbId="$( echo "$rawQueueData" | xmlstarlet sel -t -m "//slot[filename='$nzbName'][$i]/nzo_id"  -v . )"
+        	sabChangePrioNzo $nzbId $priority
+                let i++
+	done
+}
+
+#= sabChangePrioNum ================================================================
+# Function:    sabChangePrioNum
+# Description: Changes the priority of a nzb in the SABnzbd queue.
+#
+# Parameter:   $1 - The number of the nzb file to change the priority.
+#              $2 - The new priority to set (numeric)
+#
+# Examples:    sabChangePrioNum 1 -2
+#
+#===================================================================================
+sabChangePrioNum(){
+        nzbNum=$1
+	priority=$2
+
+        nzbId="$( echo "$rawData" | xmlstarlet sel -t -m "//slot[$nzbNum]/nzo_id"  -v . )"
+
+        sabChangePrioNzo $nzbId $priority
+}
+
+#= sabChangeCat ====================================================================
+#
+# Function:    sabChangeCat
+# Description: Changes the category of a nzb in the SABnzbd queue.
+#
+# Parameter:   $1 - The name/nzo_id/number of the nzb file to change the priority.
+#              $2 - The new category to set.
+#
+# Examples:    sabChangeCat ubuntu14_04 test
+#
+#===================================================================================
+sabChangeCat(){
+	target=$1
+	category=$2
+
+        case $target in
+                SABnzbd_nzo_*)
+                        # nzo id. Changee this one only
+                        sabChangeCatNzo $target $category
+                        ;;
+                ''|*[!0-9]*)
+                        # string, means nzb title. Change all that match.
+                        sabChangeCatName $target $category
+                        ;;
+                *)
+                        # It must be a number.
+                        sabChangeCatNum $target $category
+                        ;;
+        esac
 	
 }
 
-sabChangeNzo(){
+#= sabChangeCatNzo =================================================================
+#
+# Function:    sabChangeCatNzo
+# Description: Changes the category of a nzb in the SABnzbd queue.
+#
+# Parameter:   $1 - The nzo_id of the nzb file to change the priority.
+#              $2 - The new category to set.
+#
+# Examples:    sabChangeCatNzo SABnzbd_nzo_wRDhlV test
+#
+#===================================================================================
+sabChangeCatNzo(){
 	target=$1
 	category=$2
-	priority=$3
-	echo $target
+
+        mode="change_cat"
+        extra="value=$target&value2=$category"
+
+        rawStatusData=$( getRawData $mode $extra )
+
+	status="$( echo "$rawStatusData" | xmlstarlet sel -t -m "//status" -v . )"
+	
+	if [ "$status" = "True" ]; then
+		printText "Changed category for $target."
+	else
+		printText "Error: Changing category for $target failed."
+	fi
 }
 
-sabChangeName(){
-	target=$1
+#= sabChangeCatName ================================================================
+#
+# Function:    sabChangeCatName
+# Description: Changes the category of a all matching nzb in the SABnzbd queue.
+#
+# Parameter:   $1 - The name of the nzb file to change the priority.
+#              $2 - The new category to set.
+#
+# Examples:    sabChangeCatName ubuntu14_04 test
+#
+#===================================================================================
+sabChangeCatName(){
+	nzbName=$1
 	category=$2
-	priority=$3
-	echo $target
+
+	rawQueueData=$( getRawData queue )
+
+	numNzb="$( echo "$rawData" | xmlstarlet sel -t -c "count(/queue/slots/slot[filename='$nzbName'])")"
+
+	typeset -i i=1
+	while [ "$i" -le "$numNzb" ]; do
+		nzbId="$( echo "$rawQueueData" | xmlstarlet sel -t -m "//slot[filename='$nzbName'][$i]/nzo_id"  -v . )"
+        	sabChangeCatNzo $nzbId $category
+                let i++
+	done
 }
 
-sabChangeNum(){
-	target=$1
+#= sabChangeCatNum =================================================================
+#
+# Function:    sabChangeCatNum
+# Description: Changes the category of a nzb in the SABnzbd queue.
+#
+# Parameter:   $1 - The number of the nzb file to change the priority.
+#              $2 - The new category to set.
+#
+# Examples:    sabChangeCatNum 1 test
+#
+#===================================================================================
+sabChangeCatNum(){
+        nzbNum=$1
 	category=$2
-	category=$3
-	echo $target
+
+        nzbId="$( echo "$rawData" | xmlstarlet sel -t -m "//slot[$nzbNum]/nzo_id"  -v . )"
+
+        sabChangeCatNzo $nzbId $category
 }
 
 #= sabCheck ========================================================================
@@ -466,6 +631,7 @@ printHelp(){
         echo "     - long-status : Print queue status (verbose)"
         echo "     - add         : Adds a nzb to the queue"
         echo "     - delete      : Deletes a nzb from the queue"
+        echo "     - change      : Changes the priority and/or category of a nzb."
         echo "     - pause       : Pauses SABnzbd"
         echo "     - resume      : Resumes a paused SABnzbd"
         echo "     - restart     : Restarts SABnzbd"
@@ -486,6 +652,8 @@ printHelp(){
         echo "     - $(basename $0) status"
         echo "     - $(basename $0) add --nzb http://here.is.my.nzb/ubuntu14_04.nzb"
         echo "     - $(basename $0) add --nzb /tmp/here.is.my.nzb/ubuntu14_04.nzb"
+        echo "     - $(basename $0) change --target ubuntu14_04 --category test"
+        echo "     - $(basename $0) change --target ubuntu14_04 --priority high"
         echo "     - $(basename $0) delete --target ubuntu14_04"
         echo "     - $(basename $0) delete --target SABnzbd_nzo_wRDhlV"       
         echo "     - $(basename $0) delete --target 2"
@@ -561,6 +729,8 @@ while [[ $# > 1 ]]; do
 			;;
 		-p|--priority)
 			priority="$2"
+
+                        # Convert priorities to their matching numbers
 			case $priority in
 				paused)
 					priority="-2"
@@ -593,14 +763,6 @@ shift
 
 sabCheck
 
-if [ -z $category ]; then
-	category="Default"
-fi
-
-if [ -z $priority ]; then
-	priority="-100"
-fi
-
 # switch over the available commands
 case $command in
 	status )
@@ -616,8 +778,18 @@ case $command in
 	add )
 		# add nzb. Either file or url.
 		if [ -z $nzb ]; then
-			echo "Error: Add command requires a second argument."
+			echo "Error: Add command requires a nzb."
 		else
+
+                        # set default values. For newly added nzb files.
+                        if [ -z $category ]; then
+	                        category="Default"
+                        fi
+
+                        if [ -z $priority ]; then
+	                        priority="-100"
+                        fi
+
 			sabAdd $nzb $category $priority
 		fi
 		;;
@@ -625,7 +797,7 @@ case $command in
 	delete )
 		# delete nzb
 		if [ -z "$target" ]; then
-			echo "Error: Delete command requires a second argument."
+			echo "Error: Delete command requires a target."
 		else
 			sabDelete $target
 		fi
@@ -648,7 +820,29 @@ case $command in
 
 	change )
 		# change priority and/or category
-		sabChange $target $category $priority
+                if [ -z $category ] && [ -z $priority ]; then
+                        echo "Error: Change command requires either priority or category (or both)"
+                elif [ -z $target ]; then
+			echo "Error: Change command requires a target."
+		else
+        
+
+			printHeader
+		        printEmptyLine
+
+        	        # process category change
+	                if [ ! -z $category ]; then
+        			sabChangeCat $target $category
+	                fi
+
+                	# process priority change
+        	        if [ ! -z $priority ]; then
+	        		sabChangePrio $target $priority
+	                fi
+
+        		printEmptyLine
+		        printFooter
+		fi
 		;;
 	* )
 		# print the help
