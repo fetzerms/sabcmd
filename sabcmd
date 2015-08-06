@@ -644,6 +644,7 @@ case $command in
 	restart )
 		# restart sabnzbd
 		sabRestart
+		;;
 
 	change )
 		# change priority and/or category
@@ -652,6 +653,7 @@ case $command in
 	* )
 		# print the help
 		printHelp
+		;;
 esac	
 
 IFS=$OIFS
