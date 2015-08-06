@@ -14,6 +14,8 @@
 #             2015-07-26: Initial version                              ( fetzerms )
 #             2015-07-26: Added support for nzo_id and number 
 #		          when deleting queue entries.                 ( fetzerms )
+#             2015-08-06: Added priority support while adding          ( fetzerms )
+#                         NZBs.
 #
 #
 #===================================================================================
@@ -381,6 +383,54 @@ sabDeleteNum(){
         sabDeleteNzo $nzbId	
 }
 
+sabChange(){
+	target=$1
+	category=$2
+	priority=$3
+
+        printHeader
+        printEmptyLine
+        case $target in
+                SABnzbd_nzo_*)
+                        # nzo id. Changee this one only
+                        sabChangeNzo $target $category $priority
+                        ;;
+                ''|*[!0-9]*)
+                        # string, means nzb title. Change all that match.
+                        sabChangeName $target $category $priority
+                        ;;
+                *)
+                        # It must be a number.
+                        sabChangeNum $target $category $priority
+                        ;;
+        esac
+        printEmptyLine
+        printFooter
+
+	
+}
+
+sabChangeNzo(){
+	target=$1
+	category=$2
+	priority=$3
+	echo $target
+}
+
+sabChangeName(){
+	target=$1
+	category=$2
+	priority=$3
+	echo $target
+}
+
+sabChangeNum(){
+	target=$1
+	category=$2
+	category=$3
+	echo $target
+}
+
 #= sabCheck ========================================================================
 #
 # Function:    sabCheck
@@ -594,6 +644,10 @@ case $command in
 	restart )
 		# restart sabnzbd
 		sabRestart
+
+	change )
+		# change priority and/or category
+		sabChange $target $category $priority
 		;;
 	* )
 		# print the help
