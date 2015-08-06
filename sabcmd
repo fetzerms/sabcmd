@@ -512,6 +512,9 @@ while [[ $# > 1 ]]; do
 		-p|--priority)
 			priority="$2"
 			case $priority in
+				paused)
+					priority="-2"
+					;;
 				low)
 					priority="-1"
 					;;
@@ -545,7 +548,7 @@ if [ -z $category ]; then
 fi
 
 if [ -z $priority ]; then
-	priority="Default"
+	priority="-100"
 fi
 
 # switch over the available commands

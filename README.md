@@ -45,7 +45,7 @@ SABcmd can be invoked on the command line, passing commands and parameters.
        Parameters:
          - --category/-c : The category for the nzb.
          - --priority/-p : The priority for the nzb. 
-                           Possible values: low, normal, high and force.
+                           Possible values: paused, low, normal, high and force.
          - --nzb/-n      : Path or url to the nzb file to add.
          - --target/-t   : The queue target to operate on.
                            Can be: nzo_id, nzb-name or number
