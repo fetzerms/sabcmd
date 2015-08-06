@@ -43,7 +43,9 @@ SABcmd can be invoked on the command line, passing commands and parameters.
          - restart     : Restarts SABnzbd
 
        Parameters:
-         - --category/-c : The category to add a nzb to.
+         - --category/-c : The category for the nzb.
+         - --priority/-p : The priority for the nzb. 
+                           Possible values: low, normal, high and force.
          - --nzb/-n      : Path or url to the nzb file to add.
          - --target/-t   : The queue target to operate on.
                            Can be: nzo_id, nzb-name or number
@@ -54,7 +56,8 @@ SABcmd can be invoked on the command line, passing commands and parameters.
          
        Examples:
          - sabcmd status
-         - sabcmd add --nzb http://here.is.my.nzb/ubuntu14_04.nzb
+         - sabcmd add --nzb http://here.is.my.nzb/ubuntu14_04.nzb --priority low
+         - sabcmd add --nzb http://here.is.my.nzb/ubuntu14_04.nzb --priority low --category test
          - sabcmd add --nzb /tmp/here.is.my.nzb/ubuntu14_04.nzb
          - sabcmd delete --target ubuntu14_04
          - sabcmd delete --target SABnzbd_nzo_wRDhlV
