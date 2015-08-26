@@ -16,6 +16,7 @@
 #		          when deleting queue entries.                 ( fetzerms )
 #             2015-08-06: Added priority support while adding          ( fetzerms )
 #                         NZBs.
+#             2015-08-26: Added support for local files                ( fetzerms )
 #
 #
 #===================================================================================
@@ -198,7 +199,11 @@ sabAdd(){
 			sabAddUrl $fileUrl $category $priority
 			;;
 		* )	
-			sabAddUpload $fileUrl $category $priority
+                        if [ -e $fileUrl ]; then
+        			sabAddUpload $fileUrl $category $priority
+                        else
+                                sabAddLocal $fileUrl $category $priority
+                        fi
 			;;
 	esac
 }
@@ -235,7 +240,6 @@ sabAddUrl(){
 	fi
 	printEmptyLine
         printFooter
-
 }
 
 #= sabAddUpload =====================================================================
@@ -273,6 +277,40 @@ sabAddUpload(){
 	printEmptyLine
         printFooter
 	
+}
+
+#= sabAddLocal =====================================================================
+#
+# Function:    sabAddUrl
+# Description: Adds a nzb file to the SABnzbd instance via an external url.
+#
+# Parameter:   $1 - The nzb file to add. Must be a URL starting with http or https.
+#              $2 - (optional) The category to add the nzb to.
+#
+# Examples:    sabAddUrl http://here.is.my.nzb/ubuntu14_04.nzb
+#
+#===================================================================================
+sabAddLocal(){
+	filePath=$1
+	category=$2
+	priority=$3
+
+	mode="addlocalfile"
+	extra="name=$filePath&cat=$category&priority=$priority"
+
+	rawData=$(getRawData $mode $extra)
+
+        status="$( echo "$rawData" | xmlstarlet sel -t -m "//status" -v . )"
+
+        printHeader
+	printEmptyLine
+	if [ "$status" = "True" ]; then
+		printText "SABnzbd added file $filePath successfully."
+	else
+		printText "SABnzbd failed to add file $filePath."
+	fi
+	printEmptyLine
+        printFooter
 }
 
 #= sabDelete =======================================================================

@@ -67,6 +67,20 @@ SABcmd can be invoked on the command line, passing commands and parameters.
          - sabcmd delete --target 2
 
 
+Note on add command
+-------
+The add command takes three types of --nzb arguments:
+
+- Local files: Those will be uploaded to SABnzbd.
+- Remote files: Files that are local to the SABnzbd instance.
+- Urls: A url to the NZB to add.
+
+The procedure is as follows:
+
+- If the --nzb argument starts with http, the url is passed to SABnzbd.
+- If the --nzb argument is a file path, and if the file exists locally, it is uploaded to SABnzbd.
+- If the --nzb argument is a file path, and does not exist locally, it is passed to SABnzbd.
+
 Contributing
 -------
 Contributions and feature requests are always welcome!
