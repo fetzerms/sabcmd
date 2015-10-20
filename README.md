@@ -19,7 +19,7 @@ Copy sabcmd to $PATH (e.g. /usr/local/bin).
 Copy sabcmd.conf.sample to /etc/sabcmd.conf or ~/.sabcmd.conf and edit.
 
     sudo cp sabcmd /usr/local/bin/
-    cp sabcmd ~/.sabcmd.conf
+    cp sabcmd.conf.sample ~/.sabcmd.conf
     vim ~/.sabcmd.conf
 
 To make the script work, curl and xmlstarlet need to be installed.
