@@ -108,6 +108,21 @@ sabStatus(){
 	printFooter
 }
 
+#= sabCount ======================================================================
+#
+# Function:    sabCount
+# Description: Retrieves the current queue count.
+#
+# Examples:    sabCount
+#
+#===================================================================================
+sabCount(){
+	rawData="$( getRawData "queue" )"
+	numNzb="$(echo $rawData | xmlstarlet sel -t -c "count(/queue/slots/slot)")"
+
+	echo $numNzb
+}
+
 #= sabPause ========================================================================
 #
 # Function:    sabPause
@@ -811,6 +826,11 @@ case $command in
 	long-status )
 		# print status, long
 		sabStatus true
+		;;
+
+	count )
+		#print count
+		sabCount
 		;;
 
 	add )
