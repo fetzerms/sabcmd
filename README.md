@@ -36,6 +36,7 @@ SABcmd can be invoked on the command line, passing commands and parameters.
        Commands:
          - status      : Print queue status
          - long-status : Print queue status (verbose)
+         - count       : Print the count of the queue
          - add         : Adds a nzb to the queue
          - delete      : Deletes a nzb from the queue
          - change      : Changes the priority and/or category of a nzb.
@@ -57,6 +58,7 @@ SABcmd can be invoked on the command line, passing commands and parameters.
          
        Examples:
          - sabcmd status
+         - sabcmd count
          - sabcmd add --nzb http://here.is.my.nzb/ubuntu14_04.nzb --priority low
          - sabcmd add --nzb http://here.is.my.nzb/ubuntu14_04.nzb --priority low --category test
          - sabcmd add --nzb /tmp/here.is.my.nzb/ubuntu14_04.nzb
